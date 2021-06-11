@@ -6,3 +6,6 @@
 *.egg-info*
 *.coverage
 *htmlcov*
+*.idea
+*.swp
+data/subreddits
