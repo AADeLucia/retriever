@@ -4,3 +4,4 @@ tqdm
 praw
 psaw
 pytest
+jsonlines

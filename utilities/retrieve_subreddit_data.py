@@ -7,7 +7,7 @@
 import sys
 import os
 import sys
-import json
+import jsonlines
 import gzip
 import argparse
 from time import sleep
@@ -132,20 +132,17 @@ def main():
                                                                       end_date=dstop,
                                                                       limit=None,
                                                                       cols=SUBMISSION_COLS)
-        submission_json = []
-        if subreddit_submissions is not None and len(subreddit_submissions) > 0:
+        if subreddit_submissions is not None and not subreddit_submissions.empty:
             submission_counts.append(len(subreddit_submissions))
-            for r, row in subreddit_submissions.iterrows():
-                submission_json.append(json.loads(row.to_json()))
-        with gzip.open(submission_file,"wt") as the_file:
-            json.dump(submission_json, the_file)
+            subreddit_submissions.to_json(submission_file, orient="records", lines=True, compression="gzip")
     LOGGER.info("Found {:,d} submissions".format(sum(submission_counts)))
+
     ## Pull Comments
     LOGGER.info("Pulling Comments")
     SUBREDDIT_COMMENTS_DIR = f"{SUBREDDIT_OUTDIR}comments/"
     _ = create_dir(SUBREDDIT_COMMENTS_DIR)
     for sub_file in tqdm(submission_files, desc="Date Range", position=0, leave=False, file=sys.stdout):
-        subreddit_submissions = pd.read_json(sub_file)
+        subreddit_submissions = pd.read_json(sub_file, lines=True)
         if len(subreddit_submissions) == 0:
             continue
         if args.sample_percent < 1:
@@ -160,22 +157,17 @@ def main():
         for link_id_chunk in tqdm(link_id_chunks, desc="Submission Chunks", position=1, leave=False, file=sys.stdout):
             link_df = reddit.retrieve_submission_comments(link_id_chunk)
             for link_id in link_id_chunk:
-                link_json = []
                 link_file = f"{SUBREDDIT_COMMENTS_DIR}{link_id}.json.gz"
-                if link_df is None or len(link_df) == 0:
-                    pass
-                else:
-                    link_id_df = link_df.loc[link_df["link_id"]==f"t3_{link_id}"]
-                    if link_id_df is not None and len(link_id_df) > 0:
-                        for r, row in link_id_df.iterrows():
-                            link_json.append(json.loads(row.to_json()))
-                with gzip.open(link_file,"wt") as the_file:
-                    json.dump(link_json, the_file)
+                if link_df is not None and not link_df.empty:
+                    link_id_df = link_df.loc[link_df["link_id"] == f"t3_{link_id}"]
+                    if not link_id_df.empty:
+                        link_id_df.to_json(link_file, orient="records", lines=True, compression="gzip")
+
     LOGGER.info("Script complete.")
+
 
 ####################
 ### Execute
 ####################
-
 if __name__ == "__main__":
     main()
