@@ -25,9 +25,6 @@ from retriever.util.logging import get_logger
 ### Globals
 ####################
 
-## Data Parameters
-OUTDIR = "./data/subreddits/"
-
 ## Logger
 LOGGER = get_logger()
 
@@ -63,25 +60,26 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Query Reddit Submissions and Comments")
     ## Generic Arguments
     parser.add_argument("subreddit", type=str, help="Name of the subreddit to find submissions and comments for")
-    parser.add_argument("--start_date", type=str, default="2019-01-01", help="Start date for data")
-    parser.add_argument("--end_date", type=str, default="2020-08-01", help="End date for data")
-    parser.add_argument("--query_freq", type=str, default="7D", help="How to break up the submission query")
-    parser.add_argument("--min_comments", type=int, default=0, help="Filtering criteria for querying comments based on submissions")
-    parser.add_argument("--use_praw", action="store_true", default=False, help="Retrieve Official API data objects (at expense of query time) instead of Pushshift.io data")
+    parser.add_argument("--output-dir", required=True, type=str, help="Path to output directory")
+    parser.add_argument("--start-date", type=str, default="2019-01-01", help="Start date for data")
+    parser.add_argument("--end-date", type=str, default="2020-08-01", help="End date for data")
+    parser.add_argument("--query-freq", type=str, default="7D", help="How to break up the submission query")
+    parser.add_argument("--min-comments", type=int, default=0, help="Filtering criteria for querying comments based on submissions")
+    parser.add_argument("--use-praw", action="store_true", default=False, help="Retrieve Official API data objects (at expense of query time) instead of Pushshift.io data")
     parser.add_argument("--chunksize", type=int, default=50, help="Number of submissions to query comments from simultaneously")
-    parser.add_argument("--sample_percent", type=float, default=1, help="Submission sample percent (0, 1]")
-    parser.add_argument("--random_state", type=int, default=42, help="Sample seed for any submission sampling")
+    parser.add_argument("--sample-percent", type=float, default=1, help="Submission sample percent (0, 1]")
+    parser.add_argument("--random-state", type=int, default=42, help="Sample seed for any submission sampling")
     ## Parse Arguments
     args = parser.parse_args()
     return args
 
-def create_dir(directory):
-    """
 
-    """
+def create_dir(directory):
+    """Create directory if it does not exist"""
     if not os.path.exists(directory):
         os.makedirs(directory)
-    
+
+
 def get_date_range(start_date,
                    end_date,
                    query_freq):
@@ -97,26 +95,25 @@ def get_date_range(start_date,
     DATE_RANGE = [d.date().isoformat() for d in DATE_RANGE]
     return DATE_RANGE
 
-def main():
-    """
 
-    """
+def main():
+    """Main program"""
     ## Parse Arguments
     args = parse_arguments()
     ## Initialize Reddit API Wrapper
     reddit = Reddit(args.use_praw)
     ## Create Output Directory
-    _ = create_dir(OUTDIR)
+    create_dir(args.output_dir)
     ## Get Date Range
     DATE_RANGE = get_date_range(args.start_date,
                                 args.end_date,
                                 args.query_freq)
     ## Create Output Directory
     LOGGER.info(f"\nStarting Query for r/{args.subreddit}")
-    SUBREDDIT_OUTDIR = f"{OUTDIR}{args.subreddit}/"
+    SUBREDDIT_OUTDIR = f"{args.output_dir}/{args.subreddit}/"
     SUBREDDIT_SUBMISSION_OUTDIR = f"{SUBREDDIT_OUTDIR}submissions/"
-    _ = create_dir(SUBREDDIT_OUTDIR)
-    _ = create_dir(SUBREDDIT_SUBMISSION_OUTDIR)    
+    create_dir(SUBREDDIT_OUTDIR)
+    create_dir(SUBREDDIT_SUBMISSION_OUTDIR)
     ## Identify Submission Data
     LOGGER.info("Pulling Submissions")
     submission_files = []
