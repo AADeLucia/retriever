@@ -11,6 +11,7 @@ import jsonlines
 import gzip
 import argparse
 from time import sleep
+import logging
 
 ## External
 import pandas as pd
@@ -19,14 +20,14 @@ from tqdm import tqdm
 ## Local
 from retriever import Reddit
 from retriever.util.helpers import chunks
-from retriever.util.logging import get_logger
 
 ####################
 ### Globals
 ####################
 
-## Logger
-LOGGER = get_logger()
+## Logging
+logging.basicConfig(level=logging.INFO)
+LOGGER = logging.getLogger()
 
 ## Filter Columns (To Reduce Request Load)
 SUBMISSION_COLS = [
@@ -69,6 +70,8 @@ def parse_arguments():
     parser.add_argument("--chunksize", type=int, default=50, help="Number of submissions to query comments from simultaneously")
     parser.add_argument("--sample-percent", type=float, default=1, help="Submission sample percent (0, 1]")
     parser.add_argument("--random-state", type=int, default=42, help="Sample seed for any submission sampling")
+    parser.add_argument("--debug", action="store_true", help="Run script in debug mode.")
+    parser.add_argument("--log-file", type=str, help="Write log to file instead of standard out (terminal)")
     ## Parse Arguments
     args = parser.parse_args()
     return args
@@ -100,8 +103,15 @@ def main():
     """Main program"""
     ## Parse Arguments
     args = parse_arguments()
+    
+    ## Adjust logging if needed
+    if args.debug:
+        LOGGER.setLevel(logging.DEBUG)
+    if args.log_file:
+        LOGGER.addHandler(logging.FileHandler(args.log_file))
+
     ## Initialize Reddit API Wrapper
-    reddit = Reddit(args.use_praw)
+    reddit = Reddit(init_praw=args.use_praw, logger=LOGGER)
     ## Create Output Directory
     create_dir(args.output_dir)
     ## Get Date Range
