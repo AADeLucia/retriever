@@ -8,7 +8,25 @@ Questions or concerns? Feel free to reach out to Keith Harrigian at <kharrigian@
 
 ## Credentials
 
-Prior to installing the package, you should update the `retriever/config.json` file with official API credentials for the platforms you plan to query data from. For Reddit, credentials are not explicitly necessary if you only plan to use functionality associated with the Pushshift.io API. However, if you are interested in querying updated comment scores or any subreddit metadata, you will need to provide the library with credentials.
+Prior to installing the package, you should create `retriever/config.json` file with official API credentials for the platforms you plan to query data from. For Reddit, credentials are not explicitly necessary if you only plan to use functionality associated with the Pushshift.io API. However, if you are interested in querying updated comment scores or any subreddit metadata, you will need to provide the library with credentials.
+
+### Reddit Credentials
+
+You must create credentials for your app at [https://www.reddit.com/prefs/apps](https://www.reddit.com/prefs/apps). You must have a Reddit account already. For more information, check the [Reddit API docs](https://github.com/reddit-archive/reddit). Your JSON should have a `reddit` entry like the one below.
+
+```json
+{
+    "reddit": {
+        "client_id": "app id",
+        "client_secret": "app secret",
+        "username": "your reddit username",
+        "password": "your reddit password",
+        "user_agent": "app name"
+    }
+}
+```
+
+For privacy and security **do not save this config file in your git repo**.
 
 ## Installation
 

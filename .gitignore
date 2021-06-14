@@ -9,3 +9,4 @@
 *.idea
 *.swp
 data/subreddits
+retriever/config.json
