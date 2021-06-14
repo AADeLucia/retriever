@@ -34,9 +34,6 @@ from ..util.logging import get_logger
 ## Default Maximum Number of Results
 REQUEST_LIMIT = 100000
 
-## Logging
-LOGGER = get_logger()
-
 ## Config File
 try:
     CONFIG = json.loads(pkgutil.get_data(__name__, "/../config.json"))
@@ -57,7 +54,8 @@ class Reddit(object):
     def __init__(self,
                  init_praw=False,
                  max_retries=3,
-                 backoff=2):
+                 backoff=2,
+                 logger=None):
         """
         Initialize a class to retrieve Reddit data based on
         use case and format into friendly dataframes.
@@ -72,6 +70,7 @@ class Reddit(object):
             backoff (int): Baseline number of seconds between failed 
                            query attempts. Increases exponentially with
                            each failed query attempt
+            logger (Logger): python Logger to use other than default stdout INFO logger.
         
         Returns:
             None
@@ -82,6 +81,11 @@ class Reddit(object):
         self._backoff = backoff
         ## Initialize APIs
         self._initialize_api_wrappers()
+        ## Initialize logging
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = get_logger()
     
     def __repr__(self):
         """
@@ -115,14 +119,14 @@ class Reddit(object):
             if authenticated:
                 self.api = psaw_api(self._praw, max_results_per_request=100)
             else:
-                LOGGER.warning("Reddit API credentials invalid. Defaulting to Pushshift.io API")
+                self.logger.warning("Reddit API credentials invalid. Defaulting to Pushshift.io API")
                 self._init_praw = False
                 self.api = psaw_api(max_results_per_request=100)
         else:
             ## Initialize API Objects
             if self._init_praw:
                 self._init_praw = False
-                LOGGER.warning("Reddit API credentials not detected. Defaulting to Pushshift.io API")
+                self.logger.warning("Reddit API credentials not detected. Defaulting to Pushshift.io API")
             self.api = psaw_api(max_results_per_request=100)
 
     def _authenticated(self,
@@ -136,7 +140,7 @@ class Reddit(object):
         try:
             reddit.user.me()
         except (ResponseException, OAuthException) as err:
-            LOGGER.error(f"Reddit API access error: {err}")
+            self.logger.error(f"Reddit API access error: {err}")
             return False
         else:
             return True
