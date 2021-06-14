@@ -10,3 +10,4 @@
 *.swp
 data/subreddits
 retriever/config.json
+*.log
