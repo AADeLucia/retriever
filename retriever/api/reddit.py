@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from praw import Reddit as praw_api
-from prawcore import ResponseException
+from prawcore import ResponseException, OAuthException
 from psaw import PushshiftAPI as psaw_api
 
 ## Local
@@ -135,7 +135,8 @@ class Reddit(object):
         """
         try:
             reddit.user.me()
-        except ResponseException:
+        except (ResponseException, OAuthException) as err:
+            LOGGER.error(f"Reddit API access error: {err}")
             return False
         else:
             return True
