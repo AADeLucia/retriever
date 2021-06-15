@@ -160,7 +160,6 @@ def main():
     SUBREDDIT_COMMENTS_DIR = f"{SUBREDDIT_OUTDIR}comments/"
     _ = create_dir(SUBREDDIT_COMMENTS_DIR)
     for sub_file in tqdm(submission_files, desc="Date Range", position=0, leave=False, file=sys.stdout):
-        LOGGER.info(f"{sub_file=}")
         subreddit_submissions = pd.read_json(sub_file, lines=True)
         if subreddit_submissions.empty:
             continue
@@ -172,11 +171,9 @@ def main():
         link_ids = [l for l in link_ids if not os.path.exists(f"{SUBREDDIT_COMMENTS_DIR}{l}.json.gz")]
         if len(link_ids) == 0:
             continue
-        LOGGER.info(f"{link_ids=}")
         link_id_chunks = list(chunks(link_ids, args.chunksize))
         for link_id_chunk in tqdm(link_id_chunks, desc="Submission Chunks", position=1, leave=False, file=sys.stdout):
             link_df = reddit.retrieve_submission_comments(link_id_chunk)
-            LOGGER.info(f"{link_id_chunk=}\n{link_df=}")
             for link_id in link_id_chunk:
                 link_file = f"{SUBREDDIT_COMMENTS_DIR}{link_id}.json.gz"
                 if link_df is not None and not link_df.empty:
