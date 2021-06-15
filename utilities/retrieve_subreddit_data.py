@@ -121,7 +121,6 @@ def main():
     DATE_RANGE = get_date_range(args.start_date,
                                 args.end_date,
                                 args.query_freq)
-    LOGGER.info(f"{DATE_RANGE=}")
     ## Create Output Directory
     LOGGER.info(f"\nStarting Query for r/{args.subreddit}")
     SUBREDDIT_OUTDIR = f"{args.output_dir}/{args.subreddit}/"
