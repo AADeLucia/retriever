@@ -10,3 +10,4 @@
 *.log
 data/subreddits
 retriever/config.json
+*.log
