@@ -167,6 +167,7 @@ def main():
                                                                  random_state=args.random_state,
                                                                  replace=False).reset_index(drop=True).copy()
         link_ids = subreddit_submissions.loc[subreddit_submissions["num_comments"] > args.min_comments]["id"].tolist()
+        # Skip submissions where commments were already pulled
         link_ids = [l for l in link_ids if not os.path.exists(f"{SUBREDDIT_COMMENTS_DIR}{l}.json.gz")]
         if len(link_ids) == 0:
             continue
