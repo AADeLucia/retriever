@@ -97,8 +97,11 @@ def main():
                                                                 start_date=args.start_date,
                                                                 end_date=args.end_date,
                                                                 chunksize=args.query_freq)
-        LOGGER.info(f"u/{args.author} has {len(author_submissions):,} submissions")
-        author_submissions.to_json(submission_file, orient="records", lines=True, compression="gzip")
+        if author_submissions is not None:
+            LOGGER.info(f"u/{args.author} has {len(author_submissions):,} submissions")
+            author_submissions.to_json(submission_file, orient="records", lines=True, compression="gzip")
+        else:
+            LOGGER.info(f"u/{args.author} has 0 submissions")
     else:
         LOGGER.info(f"{submission_file} already exists. Skipping.")
 
@@ -109,8 +112,11 @@ def main():
                                                           start_date=args.start_date,
                                                           end_date=args.end_date,
                                                           chunksize=args.query_freq)
-        LOGGER.info(f"u/{args.author} has {len(author_comments):,} comments")
-        author_comments.to_json(comment_file, orient="records", lines=True, compression="gzip")
+        if author_comments is not None:
+            LOGGER.info(f"u/{args.author} has {len(author_comments):,} comments")
+            author_comments.to_json(comment_file, orient="records", lines=True, compression="gzip")
+        else:
+            LOGGER.info(f"u/{args.author} has 0 comments")
     else:
         LOGGER.info(f"{comment_file} already exists. Skipping.")
 
