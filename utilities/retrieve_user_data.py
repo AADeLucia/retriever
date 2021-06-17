@@ -92,21 +92,27 @@ def main():
 
     ## Identify Submission Data
     LOGGER.info("Pulling Submissions")
-    author_submissions = reddit.retrieve_author_submissions(args.author,
-                                                            start_date=args.start_date,
-                                                            end_date=args.end_date,
-                                                            chunksize=args.query_freq)
-    LOGGER.info(f"u/{args.author} has {len(author_submissions):,} submissions")
-    author_submissions.to_json(submission_file, orient="records", lines=True, compression="gzip")
+    if not os.path.exists(submission_file):
+        author_submissions = reddit.retrieve_author_submissions(args.author,
+                                                                start_date=args.start_date,
+                                                                end_date=args.end_date,
+                                                                chunksize=args.query_freq)
+        LOGGER.info(f"u/{args.author} has {len(author_submissions):,} submissions")
+        author_submissions.to_json(submission_file, orient="records", lines=True, compression="gzip")
+    else:
+        LOGGER.info(f"{submission_file} already exists. Skipping.")
 
     ## Identify Comment Data
     LOGGER.info("Pulling Comments")
-    author_comments = reddit.retrieve_author_comments(args.author,
-                                                      start_date=args.start_date,
-                                                      end_date=args.end_date,
-                                                      chunksize=args.query_freq)
-    LOGGER.info(f"u/{args.author} has {len(author_comments):,} comments")
-    author_comments.to_json(comment_file, orient="records", lines=True, compression="gzip")
+    if not os.path.exists(comment_file):
+        author_comments = reddit.retrieve_author_comments(args.author,
+                                                          start_date=args.start_date,
+                                                          end_date=args.end_date,
+                                                          chunksize=args.query_freq)
+        LOGGER.info(f"u/{args.author} has {len(author_comments):,} comments")
+        author_comments.to_json(comment_file, orient="records", lines=True, compression="gzip")
+    else:
+        LOGGER.info(f"{comment_file} already exists. Skipping.")
 
     LOGGER.info("Script complete.")
 
