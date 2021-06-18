@@ -75,6 +75,8 @@ def parse_arguments():
     parser.add_argument("--random-state", type=int, default=42, help="Sample seed for any submission sampling")
     parser.add_argument("--debug", action="store_true", help="Run script in debug mode.")
     parser.add_argument("--log-file", type=str, help="Write log to file instead of standard out (terminal)")
+    parser.add_argument("--limit-submission-metadata", action="store_true",
+                        help=f"Limit retrieved submission metadata to {SUBMISSION_COLS}")
     ## Parse Arguments
     args = parser.parse_args()
     return args
@@ -127,6 +129,15 @@ def main():
     SUBREDDIT_SUBMISSION_OUTDIR = f"{SUBREDDIT_OUTDIR}submissions/"
     create_dir(SUBREDDIT_OUTDIR)
     create_dir(SUBREDDIT_SUBMISSION_OUTDIR)
+
+    ## Get subreddit info
+    if args.use_praw:
+        LOGGER.info(f"Pulling subreddit metadata")
+        meta_file = f"{SUBREDDIT_OUTDIR}metadata.json.gz"
+        meta = reddit.retrieve_subreddit_metadata(args.subreddit)
+        meta = pd.DataFrame.from_dict([meta])
+        meta.to_json(meta_file, orient="records", lines=True, compression="gzip")
+
     ## Identify Submission Data
     LOGGER.info("Pulling Submissions")
     submission_files = []
@@ -142,7 +153,7 @@ def main():
                                                                       start_date=dstart,
                                                                       end_date=dstop,
                                                                       limit=None,
-                                                                      cols=SUBMISSION_COLS)
+                                                                      cols=SUBMISSION_COLS if args.limit_submission_metadata else None)
         if subreddit_submissions is not None and not subreddit_submissions.empty:
             submission_counts += len(subreddit_submissions)
             subreddit_submissions.to_json(submission_file, orient="records", lines=True, compression="gzip")
