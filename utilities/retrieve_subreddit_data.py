@@ -7,6 +7,7 @@ import sys
 import os
 import sys
 import jsonlines
+import json
 import gzip
 import argparse
 from time import sleep
@@ -96,6 +97,9 @@ def get_date_range(start_date,
     """
     ## Query Date Range
     DATE_RANGE = list(pd.date_range(start_date, end_date, freq=query_freq))
+    if len(DATE_RANGE) == 0:
+        LOGGER.error(f"Provided end date ({str(end_date)}) is before start date ({str(start_date)})")
+        exit(1)
     if pd.to_datetime(start_date) < DATE_RANGE[0]:
         DATE_RANGE = [pd.to_datetime(start_date)] + DATE_RANGE
     if pd.to_datetime(end_date) > DATE_RANGE[-1]:
@@ -135,18 +139,17 @@ def main():
         LOGGER.info(f"Pulling subreddit metadata")
         meta_file = f"{SUBREDDIT_OUTDIR}metadata.json.gz"
         meta = reddit.retrieve_subreddit_metadata(args.subreddit)
-        meta = pd.DataFrame.from_dict([meta])
-        meta.to_json(meta_file, orient="records", lines=True, compression="gzip")
+        meta["created_utc"] = str(pd.to_datetime(meta.get("created_utc"), unit="s"))
+        with gzip.open(meta_file, "wt") as f:
+            json.dump(meta, f)
 
         # Fix date range to not query before subreddit was founded
-        if meta.get("created_utc") > pd.to_datetime(args.start_date):
-            DATE_RANGE = get_date_range(meta.get("created_utc"),
+        created = pd.to_datetime(meta.get("created_utc"))
+        if created > pd.to_datetime(args.start_date):
+            LOGGER.info(f"r/{args.subreddit} did not exist until {created}. Changing start date from {args.start_date} to {created}")
+            DATE_RANGE = get_date_range(created,
                                         args.end_date,
                                         args.query_freq)
-            LOGGER.info(f"Changed start date from {args.start_date} to {meta.get('created_utc')}")
-        if meta.get("created_utc") > pd.to_datetime(args.end_date):
-            LOGGER.error(f"{args.subreddit} did not exist until {meta.get('created_utc')}. Exiting.")
-            exit(1)
 
     ## Identify Submission Data
     LOGGER.info("Pulling Submissions")
