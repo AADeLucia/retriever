@@ -138,6 +138,16 @@ def main():
         meta = pd.DataFrame.from_dict([meta])
         meta.to_json(meta_file, orient="records", lines=True, compression="gzip")
 
+        # Fix date range to not query before subreddit was founded
+        if meta.get("created_utc") > args.start_date:
+            DATE_RANGE = get_date_range(meta.get("created_utc"),
+                                        args.end_date,
+                                        args.query_freq)
+            LOGGER.info(f"Changed start date from {args.start_date} to {meta.get('created_utc')}")
+        if meta.get("created_utc") > args.end_date:
+            LOGGER.error(f"{args.subreddit} did not exist until {meta.get('created_utc')}. Exiting.")
+            exit(1)
+
     ## Identify Submission Data
     LOGGER.info("Pulling Submissions")
     submission_files = []
