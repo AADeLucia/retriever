@@ -628,15 +628,17 @@ class Reddit(object):
                 df = self._parse_psaw_comment_request(req)
                 ## Fall Back to PRAW
                 if hasattr(self, "_init_praw") and self._init_praw and len(df) == 0:
-                    df = []
+                    temp_dfs = []
                     for s in submissions_clean:
-                        df.append(self._retrieve_submission_comments_praw(submission_id=s))
+                        temp_dfs.append(self._retrieve_submission_comments_praw(submission_id=s))
+                    df = pd.concat(temp_dfs)
                 ## Sort
                 if len(df) > 0:
                     df = df.sort_values("created_utc", ascending=True)
                     df = df.reset_index(drop=True)
                 return df
             except Exception as e:
+                self.logger.warning(f"{e}")
                 sleep(backoff)
                 backoff = 2 ** backoff
     
