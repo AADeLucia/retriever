@@ -76,16 +76,17 @@ class Reddit(object):
             None
         """
         ## Class Attributes
-        self._init_praw = init_praw
-        self._max_retries = max_retries
-        self._backoff = backoff
-        ## Initialize APIs
-        self._initialize_api_wrappers()
         ## Initialize logging
         if logger:
             self.logger = logger
         else:
             self.logger = get_logger()
+        self._init_praw = init_praw
+        self._max_retries = max_retries
+        self._backoff = backoff
+        ## Initialize APIs
+        self._initialize_api_wrappers()
+
     
     def __repr__(self):
         """
@@ -117,6 +118,7 @@ class Reddit(object):
             authenticated = self._authenticated(self._praw)
             ## Initialize Pushshift API around PRAW API
             if authenticated:
+                self.logger.info(f"Reddit credentials authenticated. Using PRAW API.")
                 self.api = psaw_api(self._praw, max_results_per_request=100)
             else:
                 self.logger.warning("Reddit API credentials invalid. Defaulting to Pushshift.io API")

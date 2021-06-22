@@ -192,7 +192,10 @@ def main():
                                                                  replace=False).reset_index(drop=True).copy()
         link_ids = subreddit_submissions.loc[subreddit_submissions["num_comments"] > args.min_comments]["id"].tolist()
         # Skip submissions where commments were already pulled
+        num_total_links = len(link_ids)
         link_ids = [l for l in link_ids if not os.path.exists(f"{SUBREDDIT_COMMENTS_DIR}{l}.json.gz")]
+        num_processed_links = num_total_links - len(link_ids)
+        LOGGER.info(f"Already processed comments from {num_processed_links} submissions. Skipping those.")
         if len(link_ids) == 0:
             continue
         link_id_chunks = list(chunks(link_ids, args.chunksize))
