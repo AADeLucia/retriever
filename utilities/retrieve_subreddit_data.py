@@ -63,6 +63,8 @@ def parse_arguments():
     ## Generic Arguments
     parser.add_argument("subreddit", type=str, help="Name of the subreddit to find submissions and comments for")
     parser.add_argument("--output-dir", required=True, type=str, help="Path to output directory")
+    parser.add_argument("--comments-only", action="store_true",
+                        help="Only query comments from already pulled submissions in --output-dir")
     parser.add_argument("--start-date", type=str, default="2019-01-01", help="Start date for data")
     parser.add_argument("--end-date", type=str, default="2020-08-01", help="End date for data")
     parser.add_argument("--query-freq", type=str, default="7D", help="How to break up the submission query")
@@ -98,7 +100,7 @@ def get_date_range(start_date,
     ## Query Date Range
     DATE_RANGE = list(pd.date_range(start_date, end_date, freq=query_freq))
     if len(DATE_RANGE) == 0:
-        LOGGER.error(f"Provided end date ({str(end_date)}) is before start date ({str(start_date)})")
+        LOGGER.error(f"Start, End Date, and Query frequency are not compatible. Or provided end date ({str(end_date)}) is before start date ({str(start_date)})")
         exit(1)
     if pd.to_datetime(start_date) < DATE_RANGE[0]:
         DATE_RANGE = [pd.to_datetime(start_date)] + DATE_RANGE
@@ -152,36 +154,39 @@ def main():
                                         args.query_freq)
 
     ## Identify Submission Data
-    LOGGER.info("Pulling Submissions")
     submission_files = []
-    submission_counts = 0
-    for dstart, dstop in tqdm(list(zip(DATE_RANGE[:-1], DATE_RANGE[1:])), desc="Date Range", file=sys.stdout):
-        submission_file = f"{SUBREDDIT_SUBMISSION_OUTDIR}{dstart}_{dstop}.json.gz"
-        if os.path.exists(submission_file):
-            LOGGER.info(f"Skipping {submission_file} because it already exists.")
-            submission_files.append(submission_file)
-            continue
-        ## Query Submissions
-        subreddit_submissions = reddit.retrieve_subreddit_submissions(args.subreddit,
-                                                                      start_date=dstart,
-                                                                      end_date=dstop,
-                                                                      limit=None,
-                                                                      cols=SUBMISSION_COLS if args.limit_submission_metadata else None)
-        if subreddit_submissions is not None and not subreddit_submissions.empty:
-            submission_counts += len(subreddit_submissions)
-            subreddit_submissions.to_json(submission_file, orient="records", lines=True, compression="gzip")
-            submission_files.append(submission_file)
+    if not args.comments_only:
+        LOGGER.info("Pulling Submissions")
+        submission_counts = 0
+        for dstart, dstop in tqdm(list(zip(DATE_RANGE[:-1], DATE_RANGE[1:])), desc="Date Range", file=sys.stdout):
+            submission_file = f"{SUBREDDIT_SUBMISSION_OUTDIR}{dstart}_{dstop}.json.gz"
+            if os.path.exists(submission_file):
+                LOGGER.info(f"Skipping {submission_file} because it already exists.")
+                submission_files.append(submission_file)
+                continue
+            ## Query Submissions
+            subreddit_submissions = reddit.retrieve_subreddit_submissions(args.subreddit,
+                                                                          start_date=dstart,
+                                                                          end_date=dstop,
+                                                                          limit=None,
+                                                                          cols=SUBMISSION_COLS if args.limit_submission_metadata else None)
+            if subreddit_submissions is not None and not subreddit_submissions.empty:
+                submission_counts += len(subreddit_submissions)
+                subreddit_submissions.to_json(submission_file, orient="records", lines=True, compression="gzip")
+                submission_files.append(submission_file)
 
-    LOGGER.info(
-        "Found {:,d} submissions. Note this number does not include pre-pulled submissions".format(submission_counts))
-    if submission_counts == 0 and len(submission_files) == 0:
-        LOGGER.info(f"No submissions found from {DATE_RANGE[0]} to {DATE_RANGE[-1]}. Exiting.")
-        sys.exit(0)
+        LOGGER.info(
+            "Found {:,d} submissions. Note this number does not include pre-pulled submissions".format(submission_counts))
+        if submission_counts == 0 and len(submission_files) == 0:
+            LOGGER.info(f"No submissions found from {DATE_RANGE[0]} to {DATE_RANGE[-1]}. Exiting.")
+            sys.exit(0)
 
     ## Pull Comments
     LOGGER.info("Pulling Comments")
     SUBREDDIT_COMMENTS_DIR = f"{SUBREDDIT_OUTDIR}comments/"
     _ = create_dir(SUBREDDIT_COMMENTS_DIR)
+    if not submission_files:
+        submission_files = [f"{SUBREDDIT_SUBMISSION_OUTDIR}/{p}" for p in os.listdir(SUBREDDIT_SUBMISSION_OUTDIR)]
     for sub_file in tqdm(submission_files, desc="Date Range", position=0, leave=False, file=sys.stdout):
         subreddit_submissions = pd.read_json(sub_file, lines=True)
         if subreddit_submissions.empty:
@@ -191,7 +196,7 @@ def main():
                                                                  random_state=args.random_state,
                                                                  replace=False).reset_index(drop=True).copy()
         link_ids = subreddit_submissions.loc[subreddit_submissions["num_comments"] > args.min_comments]["id"].tolist()
-        # Skip submissions where commments were already pulled
+        # Skip submissions where comments were already pulled
         num_total_links = len(link_ids)
         link_ids = [l for l in link_ids if not os.path.exists(f"{SUBREDDIT_COMMENTS_DIR}{l}.json.gz")]
         num_processed_links = num_total_links - len(link_ids)
