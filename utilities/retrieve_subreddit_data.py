@@ -137,9 +137,19 @@ def main():
     create_dir(SUBREDDIT_SUBMISSION_OUTDIR)
 
     ## Get subreddit info
-    if args.use_praw:
+    meta_file = f"{SUBREDDIT_OUTDIR}metadata.json.gz"
+    if os.path.exists(meta_file):
+        with gzip.open(meta_file, "rt") as f:
+            meta = json.load(f)
+        # Fix date range to not query before subreddit was founded
+        created = pd.to_datetime(meta.get("created_utc"))
+        if created > pd.to_datetime(args.start_date):
+            LOGGER.info(f"r/{args.subreddit} did not exist until {created}. Changing start date from {args.start_date} to {created}")
+            DATE_RANGE = get_date_range(created,
+                                        args.end_date,
+                                        args.query_freq)
+    elif args.use_praw:
         LOGGER.info(f"Pulling subreddit metadata")
-        meta_file = f"{SUBREDDIT_OUTDIR}metadata.json.gz"
         meta = reddit.retrieve_subreddit_metadata(args.subreddit)
         meta["created_utc"] = str(pd.to_datetime(meta.get("created_utc"), unit="s"))
         with gzip.open(meta_file, "wt") as f:
